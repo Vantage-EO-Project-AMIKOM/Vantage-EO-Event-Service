@@ -31,7 +31,10 @@ class EventController extends Controller
             'status' => ['nullable', 'in:draft,published,completed,cancelled'],
         ]);
 
-        $event = Event::create($data);
+        $event = Event::create([
+            ...$data,
+            'creator_id' => $request->attributes->get('auth_user')['id'],
+        ]);
 
         return response()->json([
             'message' => 'Event created successfully',
@@ -49,6 +52,7 @@ class EventController extends Controller
     public function update(Request $request, string $id)
     {
         $event = Event::findOrFail($id);
+        $this->authorizeOwner($request, $event);
 
         $data = $request->validate([
             'category_id' => ['sometimes', 'required', 'integer', 'exists:categories,id'],
@@ -72,13 +76,20 @@ class EventController extends Controller
         ]);
     }
 
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
         $event = Event::findOrFail($id);
+        $this->authorizeOwner($request, $event);
         $event->delete();
 
         return response()->json([
             'message' => 'Event deleted successfully',
         ]);
+    }
+
+    private function authorizeOwner(Request $request, Event $event): void
+    {
+        $user = $request->attributes->get('auth_user');
+        abort_unless($user['role'] === 'admin' || (int) $event->creator_id === (int) $user['id'], 403, 'You can only manage your own events.');
     }
 }

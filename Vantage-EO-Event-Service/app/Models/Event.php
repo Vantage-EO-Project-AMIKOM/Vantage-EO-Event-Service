@@ -25,6 +25,7 @@ class Event extends Model
         'price',
         'quota',
         'status',
+        'creator_id',
     ];
 
     public function category()
@@ -35,5 +36,10 @@ class Event extends Model
     public function venue()
     {
         return $this->belongsTo(Venue::class);
+    }
+
+    public function ticketRequests()
+    {
+        return $this->hasMany(TicketRequest::class);
     }
 }
