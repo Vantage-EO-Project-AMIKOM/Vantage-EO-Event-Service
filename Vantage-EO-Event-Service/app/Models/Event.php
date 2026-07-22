@@ -26,6 +26,7 @@ class Event extends Model
         'quota',
         'status',
         'creator_id',
+        'creator_name',
     ];
 
     public function category()

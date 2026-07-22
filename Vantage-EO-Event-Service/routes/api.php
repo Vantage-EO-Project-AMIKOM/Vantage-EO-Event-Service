@@ -19,6 +19,7 @@ Route::apiResource('venues', VenueController::class);
 Route::apiResource('events', EventController::class)->only(['index', 'show']);
 
 Route::middleware('auth.service')->group(function () {
+    Route::get('my-events', [EventController::class, 'mine']);
     Route::apiResource('events', EventController::class)->only(['store', 'update', 'destroy']);
     Route::get('ticket-requests', [TicketRequestController::class, 'index']);
     Route::post('events/{event}/ticket-requests', [TicketRequestController::class, 'store']);

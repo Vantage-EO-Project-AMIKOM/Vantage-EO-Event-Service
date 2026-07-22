@@ -11,8 +11,23 @@ class EventController extends Controller
     public function index()
     {
         return response()->json([
-            'data' => Event::with(['category', 'venue'])->latest()->get(),
+            'data' => Event::with(['category', 'venue'])
+                ->where('status', 'published')
+                ->latest()
+                ->get(),
         ]);
+    }
+
+    public function mine(Request $request)
+    {
+        $user = $request->attributes->get('auth_user');
+        $query = Event::with(['category', 'venue'])->latest();
+
+        if ($user['role'] !== 'admin') {
+            $query->where('creator_id', $user['id']);
+        }
+
+        return response()->json(['data' => $query->get()]);
     }
 
     public function store(Request $request)
@@ -24,21 +39,23 @@ class EventController extends Controller
             'description' => ['required', 'string'],
             'event_date' => ['required', 'date'],
             'start_time' => ['required'],
-            'end_time' => ['required'],
+            'end_time' => ['required', 'after:start_time'],
             'banner' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
             'quota' => ['required', 'integer', 'min:1'],
             'status' => ['nullable', 'in:draft,published,completed,cancelled'],
         ]);
 
+        $user = $request->attributes->get('auth_user');
         $event = Event::create([
             ...$data,
-            'creator_id' => $request->attributes->get('auth_user')['id'],
+            'creator_id' => $user['id'],
+            'creator_name' => $user['name'] ?? null,
         ]);
 
         return response()->json([
             'message' => 'Event created successfully',
-            'data' => $event,
+            'data' => $event->load(['category', 'venue']),
         ], 201);
     }
 
@@ -61,7 +78,7 @@ class EventController extends Controller
             'description' => ['sometimes', 'required', 'string'],
             'event_date' => ['sometimes', 'required', 'date'],
             'start_time' => ['sometimes', 'required'],
-            'end_time' => ['sometimes', 'required'],
+            'end_time' => ['sometimes', 'required', 'after:start_time'],
             'banner' => ['nullable', 'string'],
             'price' => ['sometimes', 'required', 'numeric', 'min:0'],
             'quota' => ['sometimes', 'required', 'integer', 'min:1'],
@@ -70,9 +87,14 @@ class EventController extends Controller
 
         $event->update($data);
 
+        $user = $request->attributes->get('auth_user');
+        if ((int) $event->creator_id === (int) $user['id'] && !$event->creator_name) {
+            $event->update(['creator_name' => $user['name'] ?? null]);
+        }
+
         return response()->json([
             'message' => 'Event updated successfully',
-            'data' => $event,
+            'data' => $event->fresh()->load(['category', 'venue']),
         ]);
     }
 
