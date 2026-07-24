@@ -3,7 +3,10 @@
 return [
 
     'auth' => [
-        'url' => env('AUTH_SERVICE_URL', 'http://localhost:8000/api'),
+        'url' => env(
+            'AUTH_SERVICE_URL',
+            'https://vantage-auth-service-production.up.railway.app/api'
+        ),
     ],
 
     /*
@@ -14,7 +17,7 @@ return [
     | This file is for storing the credentials for third party services such
     | as Mailgun, Postmark, AWS and more. This file provides the de facto
     | location for this type of information, allowing packages to have
-    | a conventional file to locate the various service credentials.
+    | a conventional file to locate this type of information.
     |
     */
 
