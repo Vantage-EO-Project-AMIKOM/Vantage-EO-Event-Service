@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Event extends Model
 {
+    protected $appends = ['issued_tickets_count', 'remaining_quota'];
+
     protected function casts(): array
     {
         return [
@@ -42,5 +44,21 @@ class Event extends Model
     public function ticketRequests()
     {
         return $this->hasMany(TicketRequest::class);
+    }
+
+    public function tickets()
+    {
+        return $this->hasMany(Ticket::class);
+    }
+
+    public function getIssuedTicketsCountAttribute(): int
+    {
+        return (int) ($this->attributes['issued_tickets_count']
+            ?? $this->tickets()->where('status', '!=', 'cancelled')->count());
+    }
+
+    public function getRemainingQuotaAttribute(): int
+    {
+        return max(0, (int) $this->quota - $this->issued_tickets_count);
     }
 }
