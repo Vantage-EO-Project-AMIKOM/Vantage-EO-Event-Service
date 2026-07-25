@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class EventController extends Controller
 {
@@ -85,10 +86,19 @@ class EventController extends Controller
             'status' => ['nullable', 'in:draft,published,completed,cancelled'],
         ]);
 
+        if (isset($data['quota'])) {
+            $issuedTickets = $event->tickets()->where('status', '!=', 'cancelled')->count();
+            if ($data['quota'] < $issuedTickets) {
+                throw ValidationException::withMessages([
+                    'quota' => "Quota cannot be lower than the {$issuedTickets} already issued ticket(s).",
+                ]);
+            }
+        }
+
         $event->update($data);
 
         $user = $request->attributes->get('auth_user');
-        if ((int) $event->creator_id === (int) $user['id'] && !$event->creator_name) {
+        if ((int) $event->creator_id === (int) $user['id'] && ! $event->creator_name) {
             $event->update(['creator_name' => $user['name'] ?? null]);
         }
 
